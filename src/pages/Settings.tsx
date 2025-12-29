@@ -16,9 +16,10 @@ import { Button } from "@/components/buttons/Button";
 import { SearchBarInput } from "@/components/form/SearchBar";
 import { ThinContainer } from "@/components/layout/ThinContainer";
 import { WideContainer } from "@/components/layout/WideContainer";
+import { Modal, ModalCard, useModal } from "@/components/overlays/Modal";
 import { UserIcons } from "@/components/UserIcon";
 import { Divider } from "@/components/utils/Divider";
-import { Heading1 } from "@/components/utils/Text";
+import { Heading1, Heading2, Paragraph } from "@/components/utils/Text";
 import { Transition } from "@/components/utils/Transition";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useBackendUrl } from "@/hooks/auth/useBackendUrl";
@@ -168,6 +169,10 @@ export function SettingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const prevCategoryRef = useRef<string | null>(null);
+  const backendChangeModal = useModal("settings-backend-change-confirmation");
+  const [pendingBackendChange, setPendingBackendChange] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -413,9 +418,6 @@ export function SettingsPage() {
     (s) => s.setEnableLastSuccessfulSource,
   );
 
-  const disabledSources = usePreferencesStore((s) => s.disabledSources);
-  const setDisabledSources = usePreferencesStore((s) => s.setDisabledSources);
-
   // These are commented because the EmbedOrderPart is on the admin page and not on the settings page.
   const embedOrder = usePreferencesStore((s) => s.embedOrder);
   // const setEmbedOrder = usePreferencesStore((s) => s.setEmbedOrder);
@@ -423,7 +425,6 @@ export function SettingsPage() {
   const enableEmbedOrder = usePreferencesStore((s) => s.enableEmbedOrder);
   // const setEnableEmbedOrder = usePreferencesStore((s) => s.setEnableEmbedOrder);
 
-  const disabledEmbeds = usePreferencesStore((s) => s.disabledEmbeds);
   // const setDisabledEmbeds = usePreferencesStore((s) => s.setDisabledEmbeds);
 
   const enableDiscover = usePreferencesStore((s) => s.enableDiscover);
@@ -446,6 +447,11 @@ export function SettingsPage() {
   const enableCarouselView = usePreferencesStore((s) => s.enableCarouselView);
   const setEnableCarouselView = usePreferencesStore(
     (s) => s.setEnableCarouselView,
+  );
+
+  const enableMinimalCards = usePreferencesStore((s) => s.enableMinimalCards);
+  const setEnableMinimalCards = usePreferencesStore(
+    (s) => s.setEnableMinimalCards,
   );
 
   const forceCompactEpisodeView = usePreferencesStore(
@@ -555,14 +561,13 @@ export function SettingsPage() {
     enableSourceOrder,
     lastSuccessfulSource,
     enableLastSuccessfulSource,
-    disabledSources,
     embedOrder,
     enableEmbedOrder,
-    disabledEmbeds,
     proxyTmdb,
     enableSkipCredits,
     enableImageLogos,
     enableCarouselView,
+    enableMinimalCards,
     forceCompactEpisodeView,
     enableLowPerformanceMode,
     enableNativeSubtitles,
@@ -628,9 +633,9 @@ export function SettingsPage() {
         state.enableSourceOrder.changed ||
         state.lastSuccessfulSource.changed ||
         state.enableLastSuccessfulSource.changed ||
-        state.disabledSources.changed ||
         state.proxyTmdb.changed ||
         state.enableCarouselView.changed ||
+        state.enableMinimalCards.changed ||
         state.forceCompactEpisodeView.changed ||
         state.enableLowPerformanceMode.changed ||
         state.enableHoldToBoost.changed ||
@@ -657,9 +662,9 @@ export function SettingsPage() {
           enableSourceOrder: state.enableSourceOrder.state,
           lastSuccessfulSource: state.lastSuccessfulSource.state,
           enableLastSuccessfulSource: state.enableLastSuccessfulSource.state,
-          disabledSources: state.disabledSources.state,
           proxyTmdb: state.proxyTmdb.state,
           enableCarouselView: state.enableCarouselView.state,
+          enableMinimalCards: state.enableMinimalCards.state,
           forceCompactEpisodeView: state.forceCompactEpisodeView.state,
           enableLowPerformanceMode: state.enableLowPerformanceMode.state,
           enableHoldToBoost: state.enableHoldToBoost.state,
@@ -705,7 +710,6 @@ export function SettingsPage() {
     setEnableSourceOrder(state.enableSourceOrder.state);
     setLastSuccessfulSource(state.lastSuccessfulSource.state);
     setEnableLastSuccessfulSource(state.enableLastSuccessfulSource.state);
-    setDisabledSources(state.disabledSources.state);
     setAppLanguage(state.appLanguage.state);
     setTheme(state.theme.state);
     setSubStyling(state.subtitleStyling.state);
@@ -716,6 +720,7 @@ export function SettingsPage() {
     setdebridService(state.debridService.state);
     setProxyTmdb(state.proxyTmdb.state);
     setEnableCarouselView(state.enableCarouselView.state);
+    setEnableMinimalCards(state.enableMinimalCards.state);
     setForceCompactEpisodeView(state.forceCompactEpisodeView.state);
     setEnableLowPerformanceMode(state.enableLowPerformanceMode.state);
     setEnableHoldToBoost(state.enableHoldToBoost.state);
@@ -730,25 +735,32 @@ export function SettingsPage() {
       updateProfile(state.profile.state);
     }
 
-    // when backend url gets changed, log the user out first
+    // when backend url gets changed, show confirmation and log the user out (only if logged in)
     if (state.backendUrl.changed) {
-      await logout();
-
       let url = state.backendUrl.state;
       if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
         url = `https://${url}`;
       }
-
+      if (account) {
+        // User is logged in - show confirmation
+        setPendingBackendChange(url);
+        backendChangeModal.show();
+        return;
+      }
+      // User is not logged in - just update without confirmation
       setBackendUrl(url);
     }
   }, [
     account,
     backendUrl,
+    backendChangeModal,
+    setPendingBackendChange,
+    state,
+    setBackendUrl,
     setEnableThumbnails,
     setFebboxKey,
     setdebridToken,
     setdebridService,
-    state,
     setEnableAutoplay,
     setEnableSkipCredits,
     setEnableDiscover,
@@ -759,7 +771,6 @@ export function SettingsPage() {
     setEnableSourceOrder,
     setLastSuccessfulSource,
     setEnableLastSuccessfulSource,
-    setDisabledSources,
     setAppLanguage,
     setTheme,
     setSubStyling,
@@ -767,10 +778,9 @@ export function SettingsPage() {
     updateDeviceName,
     updateProfile,
     updateNickname,
-    logout,
-    setBackendUrl,
     setProxyTmdb,
     setEnableCarouselView,
+    setEnableMinimalCards,
     setForceCompactEpisodeView,
     setEnableLowPerformanceMode,
     setEnableHoldToBoost,
@@ -849,8 +859,6 @@ export function SettingsPage() {
               setEnableLastSuccessfulSource={
                 state.enableLastSuccessfulSource.set
               }
-              disabledSources={state.disabledSources.state}
-              setDisabledSources={state.disabledSources.set}
               enableLowPerformanceMode={state.enableLowPerformanceMode.state}
               setEnableLowPerformanceMode={state.enableLowPerformanceMode.set}
               enableHoldToBoost={state.enableHoldToBoost.state}
@@ -886,6 +894,8 @@ export function SettingsPage() {
               setEnableImageLogos={state.enableImageLogos.set}
               enableCarouselView={state.enableCarouselView.state}
               setEnableCarouselView={state.enableCarouselView.set}
+              enableMinimalCards={state.enableMinimalCards.state}
+              setEnableMinimalCards={state.enableMinimalCards.set}
               forceCompactEpisodeView={state.forceCompactEpisodeView.state}
               setForceCompactEpisodeView={state.forceCompactEpisodeView.set}
               homeSectionOrder={state.homeSectionOrder.state}
@@ -948,6 +958,43 @@ export function SettingsPage() {
           </Button>
         </div>
       </Transition>
+      {account && (
+        <Modal id={backendChangeModal.id}>
+          <ModalCard>
+            <Heading2 className="!mt-0 !mb-4">
+              {t("settings.connections.server.changeWarningTitle")}
+            </Heading2>
+            <Paragraph className="!mt-1 !mb-6">
+              {t("settings.connections.server.changeWarning")}
+            </Paragraph>
+            <div className="flex justify-end gap-3">
+              <Button
+                theme="secondary"
+                onClick={() => {
+                  backendChangeModal.hide();
+                  setPendingBackendChange(null);
+                  state.backendUrl.set(backendUrlSetting);
+                }}
+              >
+                {t("actions.cancel")}
+              </Button>
+              <Button
+                theme="purple"
+                onClick={async () => {
+                  backendChangeModal.hide();
+                  if (pendingBackendChange !== null) {
+                    await logout();
+                    setBackendUrl(pendingBackendChange);
+                    setPendingBackendChange(null);
+                  }
+                }}
+              >
+                {t("actions.confirm")}
+              </Button>
+            </div>
+          </ModalCard>
+        </Modal>
+      )}
     </SubPageLayout>
   );
 }

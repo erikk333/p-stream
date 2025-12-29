@@ -9,6 +9,7 @@ import { Trans, useTranslation } from "react-i18next";
 
 import { Button } from "@/components/buttons/Button";
 import { Toggle } from "@/components/buttons/Toggle";
+import { BackendSelector } from "@/components/form/BackendSelector";
 import { Dropdown } from "@/components/form/Dropdown";
 import { Icon, Icons } from "@/components/Icon";
 import { SettingsCard } from "@/components/layout/SettingsCard";
@@ -24,6 +25,7 @@ import { Heading1, Heading2, Paragraph } from "@/components/utils/Text";
 import {
   SetupPart,
   Status,
+  fetchFebboxQuota,
   testFebboxKey,
   testTorboxToken,
   testdebridToken,
@@ -183,9 +185,44 @@ function ProxyEdit({
 function BackendEdit({ backendUrl, setBackendUrl }: BackendEditProps) {
   const { t } = useTranslation();
   const user = useAuthStore();
+  const config = conf();
+  const availableBackends =
+    config.BACKEND_URLS.length > 0
+      ? config.BACKEND_URLS
+      : config.BACKEND_URL
+        ? [config.BACKEND_URL]
+        : [];
+  const currentBackendUrl =
+    backendUrl ?? (availableBackends.length > 0 ? availableBackends[0] : null);
+  const [pendingBackendUrl, setPendingBackendUrl] = useState<string | null>(
+    currentBackendUrl,
+  );
+  const confirmationModal = useModal("backend-change-confirmation");
+
+  const handleBackendSelect = (url: string | null) => {
+    if (!user.account) {
+      // No account - just update without confirmation
+      setBackendUrl(url);
+      setPendingBackendUrl(url);
+    } else if (url !== currentBackendUrl) {
+      // User is logged in and changing backend - show confirmation
+      setPendingBackendUrl(url);
+      confirmationModal.show();
+    } else {
+      // Same backend - just update
+      setBackendUrl(url);
+      setPendingBackendUrl(url);
+    }
+  };
+
+  const handleConfirmChange = () => {
+    setBackendUrl(pendingBackendUrl);
+    confirmationModal.hide();
+  };
+
   return (
-    <SettingsCard>
-      <div className="flex justify-between items-center gap-4">
+    <>
+      <SettingsCard>
         <div className="my-3">
           <p className="text-white font-bold mb-3">
             {t("settings.connections.server.label")}
@@ -210,36 +247,60 @@ function BackendEdit({ backendUrl, setBackendUrl }: BackendEditProps) {
             </div>
           )}
         </div>
-        <div>
-          <Toggle
-            onClick={() => setBackendUrl((s) => (s === null ? "" : null))}
-            enabled={backendUrl !== null}
-          />
-        </div>
-      </div>
-      {backendUrl !== null ? (
-        <>
-          <Divider marginClass="my-6 px-8 box-content -mx-8" />
-          <p className="text-white font-bold mb-3">
-            {t("settings.connections.server.urlLabel")}
-          </p>
-          <AuthInputBox
-            onChange={setBackendUrl}
-            value={backendUrl ?? ""}
-            placeholder="https://"
-          />
-        </>
-      ) : null}
-    </SettingsCard>
+        {(availableBackends.length > 0 || currentBackendUrl) && (
+          <>
+            <Divider marginClass="my-6 px-8 box-content -mx-8" />
+            <p className="text-white font-bold mb-3">
+              {t("settings.connections.server.selectBackend")}
+            </p>
+            {availableBackends.length > 0 ? (
+              <BackendSelector
+                selectedUrl={currentBackendUrl}
+                onSelect={handleBackendSelect}
+                availableUrls={availableBackends}
+                showCustom
+              />
+            ) : (
+              <AuthInputBox
+                onChange={setBackendUrl}
+                value={backendUrl ?? ""}
+                placeholder="https://"
+              />
+            )}
+          </>
+        )}
+      </SettingsCard>
+      {user.account && (
+        <Modal id={confirmationModal.id}>
+          <ModalCard>
+            <Heading2 className="!mt-0 !mb-4">
+              {t("settings.connections.server.changeWarningTitle")}
+            </Heading2>
+            <Paragraph className="!mt-1 !mb-6">
+              {t("settings.connections.server.changeWarning")}
+            </Paragraph>
+            <div className="flex justify-end gap-3">
+              <Button theme="secondary" onClick={confirmationModal.hide}>
+                {t("settings.connections.server.cancel")}
+              </Button>
+              <Button theme="purple" onClick={handleConfirmChange}>
+                {t("settings.connections.server.confirm")}
+              </Button>
+            </div>
+          </ModalCard>
+        </Modal>
+      )}
+    </>
   );
 }
 
 async function getFebboxKeyStatus(febboxKey: string | null) {
   if (febboxKey) {
     const status: Status = await testFebboxKey(febboxKey);
-    return status;
+    const quota = await fetchFebboxQuota(febboxKey);
+    return { status, quota };
   }
-  return "unset";
+  return { status: "unset" as Status, quota: null };
 }
 
 interface FebboxSetupProps extends FebboxKeyProps {
@@ -282,6 +343,7 @@ export function FebboxSetup({
   }, [user.account, febboxKey, preferences.febboxKey, setFebboxKey, mode]);
 
   const [status, setStatus] = useState<Status>("unset");
+  const [quota, setQuota] = useState<any>(null);
   const statusMap: Record<Status, StatusCircleProps["type"]> = {
     error: "error",
     success: "success",
@@ -293,7 +355,8 @@ export function FebboxSetup({
   useEffect(() => {
     const checkTokenStatus = async () => {
       const result = await getFebboxKeyStatus(febboxKey);
-      setStatus(result);
+      setStatus(result.status);
+      setQuota(result.quota);
     };
     checkTokenStatus();
   }, [febboxKey]);
@@ -395,9 +458,6 @@ export function FebboxSetup({
                   <br />
                   <Trans i18nKey="fedapi.setup.step.5" />
                 </p>
-                <p className="text-type-danger mt-2">
-                  <Trans i18nKey="fedapi.setup.step.warning" />
-                </p>
               </div>
 
               <Divider marginClass="my-6 px-8 box-content -mx-8" />
@@ -438,6 +498,26 @@ export function FebboxSetup({
                   {t("fedapi.status.invalid_token")}
                 </p>
               )}
+              {status === "success" &&
+                quota &&
+                (() => {
+                  if (!quota?.data?.flow) return null;
+                  const {
+                    traffic_usage: used,
+                    traffic_limit: limit,
+                    reset_at: reset,
+                  } = quota.data.flow;
+                  return (
+                    <>
+                      <p className="text-sm text-green-500 mt-2">
+                        {t("fedapi.setup.traffic", { used, limit, reset })}
+                      </p>
+                      <p className="max-w-[30rem] text-xs opacity-70 mt-2">
+                        {t("fedapi.setup.trafficExplanation")}
+                      </p>
+                    </>
+                  );
+                })()}
             </>
           ) : null}
         </SettingsCard>
