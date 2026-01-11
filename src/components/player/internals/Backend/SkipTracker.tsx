@@ -8,8 +8,8 @@ type SkipEvent = NonNullable<ReturnType<typeof useSkipTracking>["latestSkip"]>;
 
 /**
  * Component that tracks and reports completed skip sessions to analytics backend.
- * Sessions are detected when users accumulate 30+ seconds of forward movement
- * within a 5-second window and end after 8 seconds of no activity.
+ * Sessions are detected when users accumulate 20+ seconds of forward movement
+ * within a 6-second window and end after 5 seconds of no activity.
  * Ignores skips that start after 20% of video duration (unlikely to be intro skipping).
  */
 interface PendingSkip {
@@ -22,7 +22,7 @@ interface PendingSkip {
 }
 
 export function SkipTracker() {
-  const { latestSkip } = useSkipTracking(30);
+  const { latestSkip } = useSkipTracking(20);
   const lastLoggedSkipRef = useRef<number>(0);
   const [pendingSkips, setPendingSkips] = useState<PendingSkip[]>([]);
   const lastPlayerTimeRef = useRef<number>(0);
@@ -44,8 +44,8 @@ export function SkipTracker() {
             skip_duration: skip.skipDuration,
             content_id: meta?.tmdbId,
             content_type: meta?.type,
-            season_id: meta?.season?.tmdbId,
-            episode_id: meta?.episode?.tmdbId,
+            season: meta?.season?.number,
+            episode: meta?.episode?.number,
             confidence: adjustedConfidence,
             turnstile_token: turnstileToken ?? "",
           }),
@@ -77,18 +77,18 @@ export function SkipTracker() {
           // Remove from pending
           return prev.filter((p) => p.skip.timestamp !== skip.timestamp);
         });
-      }, 10000); // 10 second delay
+      }, 5000); // 5 second delay
 
       return {
         skip,
         originalConfidence: skip.confidence,
-        startTime: progress.time,
+        startTime: skip.startTime,
         endTime: skip.endTime,
         hasBackwardMovement: false,
         timer,
       };
     },
-    [progress.time, sendSkipAnalytics],
+    [sendSkipAnalytics],
   );
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export function SkipTracker() {
     // eslint-disable-next-line no-console
     console.log(`Skip session completed: ${latestSkip.skipDuration}s total`);
 
-    // Create pending skip with 10-second delay
+    // Create pending skip with 5-second delay
     const pendingSkip = createPendingSkip(latestSkip);
     setPendingSkips((prev) => [...prev, pendingSkip]);
 
