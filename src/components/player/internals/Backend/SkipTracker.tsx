@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useSkipTimeSource } from "@/components/player/hooks/useSkipTime";
 import { useSkipTracking } from "@/components/player/hooks/useSkipTracking";
 import { usePlayerStore } from "@/stores/player/store";
 
@@ -18,6 +19,7 @@ interface PendingSkip {
   startTime: number;
   endTime: number;
   hasBackwardMovement: boolean;
+  skipTimeSource: "fed-skips" | null;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -31,6 +33,7 @@ export function SkipTracker() {
   const meta = usePlayerStore((s) => s.meta);
   const progress = usePlayerStore((s) => s.progress);
   const turnstileToken = "";
+  const skipTimeSource = useSkipTimeSource();
 
   const sendSkipAnalytics = useCallback(
     async (skip: SkipEvent, adjustedConfidence: number) => {
@@ -71,8 +74,11 @@ export function SkipTracker() {
             ? Math.max(0.1, pendingSkip.originalConfidence * 0.5) // Reduce confidence by half if adjusted
             : pendingSkip.originalConfidence;
 
-          // Send analytics
-          sendSkipAnalytics(pendingSkip.skip, adjustedConfidence);
+          // Only send analytics if skip time came from fed-skips
+          if (pendingSkip.skipTimeSource === "fed-skips") {
+            // Send analytics
+            sendSkipAnalytics(pendingSkip.skip, adjustedConfidence);
+          }
 
           // Remove from pending
           return prev.filter((p) => p.skip.timestamp !== skip.timestamp);
@@ -85,10 +91,11 @@ export function SkipTracker() {
         startTime: skip.startTime,
         endTime: skip.endTime,
         hasBackwardMovement: false,
+        skipTimeSource,
         timer,
       };
     },
-    [sendSkipAnalytics],
+    [sendSkipAnalytics, skipTimeSource],
   );
 
   useEffect(() => {
@@ -103,7 +110,7 @@ export function SkipTracker() {
 
     // Create pending skip with 5-second delay
     const pendingSkip = createPendingSkip(latestSkip);
-    setPendingSkips((prev) => [...prev, pendingSkip]);
+    setPendingSkips((prev) => [...prev, pendingSkip as PendingSkip]);
 
     lastLoggedSkipRef.current = latestSkip.timestamp;
   }, [latestSkip, meta, createPendingSkip]);

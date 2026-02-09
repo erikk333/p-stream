@@ -3,6 +3,7 @@ import {
   SetStateAction,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
@@ -22,6 +23,7 @@ import { MwLink } from "@/components/text/Link";
 import { AuthInputBox } from "@/components/text-inputs/AuthInputBox";
 import { Divider } from "@/components/utils/Divider";
 import { Heading1, Heading2, Paragraph } from "@/components/utils/Text";
+import { useIsDesktopApp } from "@/hooks/useIsDesktopApp";
 import {
   SetupPart,
   Status,
@@ -60,6 +62,11 @@ interface DebridProps {
   setdebridService: (value: string) => void;
   // eslint-disable-next-line react/no-unused-prop-types
   mode?: "onboarding" | "settings";
+}
+
+interface TIDBKeyProps {
+  tidbKey: string | null;
+  setTIDBKey: (value: string | null) => void;
 }
 
 function ProxyEdit({
@@ -725,21 +732,69 @@ export function DebridEdit({
   return null;
 }
 
+export function TIDBEdit({ tidbKey, setTIDBKey }: TIDBKeyProps) {
+  const { t } = useTranslation();
+  const preferences = usePreferencesStore();
+  const initializedRef = useRef(false);
+
+  // Enable TIDB key when component loads
+  useEffect(() => {
+    if (!initializedRef.current && tidbKey === null && preferences.tidbKey) {
+      initializedRef.current = true;
+      setTIDBKey(preferences.tidbKey);
+    }
+  }, [tidbKey, preferences.tidbKey, setTIDBKey]);
+
+  return (
+    <SettingsCard>
+      <div className="my-3">
+        <p className="text-white font-bold mb-3">TheIntroDB</p>
+        <p className="max-w-[40rem] font-medium mb-6">
+          <Trans i18nKey="settings.connections.tidb.description">
+            <MwLink to="https://theintrodb.org/" />
+          </Trans>
+        </p>
+        <p className="text-white font-bold mb-3">
+          {t("settings.connections.tidb.tokenLabel")}
+        </p>
+        <div className="flex items-center w-full">
+          <AuthInputBox
+            onChange={(newToken) => {
+              setTIDBKey(newToken);
+            }}
+            value={tidbKey ?? ""}
+            placeholder="theintrodb:user..."
+            passwordToggleable
+            className="flex-grow"
+          />
+        </div>
+      </div>
+    </SettingsCard>
+  );
+}
+
 export function ConnectionsPart(
-  props: BackendEditProps & ProxyEditProps & FebboxKeyProps & DebridProps,
+  props: BackendEditProps &
+    ProxyEditProps &
+    FebboxKeyProps &
+    DebridProps &
+    TIDBKeyProps,
 ) {
   const { t } = useTranslation();
+  const isDesktopApp = useIsDesktopApp();
   return (
     <div>
       <Heading1 border>{t("settings.connections.title")}</Heading1>
       <div className="space-y-6">
-        <SetupPart /> {/* I was wondering what happened to this badddev >:( */}
-        <ProxyEdit
-          proxyUrls={props.proxyUrls}
-          setProxyUrls={props.setProxyUrls}
-          proxyTmdb={props.proxyTmdb}
-          setProxyTmdb={props.setProxyTmdb}
-        />
+        <SetupPart />
+        {!isDesktopApp && (
+          <ProxyEdit
+            proxyUrls={props.proxyUrls}
+            setProxyUrls={props.setProxyUrls}
+            proxyTmdb={props.proxyTmdb}
+            setProxyTmdb={props.setProxyTmdb}
+          />
+        )}
         <BackendEdit
           backendUrl={props.backendUrl}
           setBackendUrl={props.setBackendUrl}
@@ -756,6 +811,7 @@ export function ConnectionsPart(
           setdebridService={props.setdebridService}
           mode="settings"
         />
+        <TIDBEdit tidbKey={props.tidbKey} setTIDBKey={props.setTIDBKey} />
       </div>
     </div>
   );

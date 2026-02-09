@@ -38,7 +38,7 @@
     },
     "q6": {
       "title": "Is there a P-Stream app?",
-      "body": "Not yet, but you can install it as a PWA (Progressive Web App). On iOS, use Safari → Share → Add to Home Screen. On Android, use Chrome → 3 dots → Add to Home Screen. An experimental APK is available via our Discord, but it's not recommended.",
+      "body": "Yes! We now have an official desktop app available for download! https://github.com/p-stream/p-stream-desktop/releases",
       "section": "general"
     },
     "q7": {
@@ -108,7 +108,7 @@
     },
     "q21": {
       "title": "Does FED API work on all devices?",
-      "body": "Yes. Once set up, your token works across all logged-in devices.",
+      "body": "Yes. Once set up, your token works across all devices!",
       "section": "connections"
     },
     "q22": {
@@ -229,7 +229,7 @@
   "footer": {
     "legal": {
       "disclaimer": "Disclaimer ◝(ᵔᵕᵔ)◜",
-      "disclaimerText": "Please note: P-Stream does not host any files itself but instead only display's content from 3rd party providers. Legal issues should be taken up with them."
+      "disclaimerText": "Please note: P-Stream does not host any files itself; instead, it only displays content from third-party providers. Legal issues should be taken up with them."
     },
     "links": {
       "discord": "Discord",
@@ -378,6 +378,10 @@
     "mediaList": {
       "stopEditing": "Stop editing"
     },
+    "watchHistory": {
+      "sectionTitle": "Watch History",
+      "recentlyWatched": "Recently Watched"
+    },
     "search": {
       "allResults": "That's all we have...",
       "failed": "Failed to find media, try again!",
@@ -485,6 +489,7 @@
     "seasons": "Season/s",
     "season": "Season",
     "episode": "Episode",
+    "watched": "Watched {{watched}} of {{total}} ({{percentage}}%)",
     "airs": "Airs",
     "endsAt": "Ends at {{time}}",
     "trailer": "Trailer",
@@ -602,7 +607,8 @@
       "settings": "Settings",
       "support": "Support",
       "discover": "Discover",
-      "development": "Development"
+      "development": "Development",
+      "desktop": "App Settings"
     }
   },
   "notFound": {
@@ -623,6 +629,7 @@
       "cancel": "Cancel",
       "confirm": "Use default setup",
       "description": "The default setup does not have the best streams. You'll be missing out on the best sources!",
+      "tip": "It's recommended to set up the extension and/or FED API!",
       "title": "Are you sure?"
     },
     "extension": {
@@ -664,16 +671,16 @@
     "start": {
       "explainer": "To get the best streams possible, you will need to choose which streaming method you want to use.",
       "moreInfo": {
-        "button": "More info",
+        "button": "Which setup should I choose?",
         "title": "Understanding a setup",
         "explainer": {
           "intro": "P-Stream doesn't host videos. It relies on third-party websites for content, so you need to choose how it connects to those sites.",
           "options": "Your Options:",
-          "extension": "1. Extension",
+          "extension": "Extension",
           "extensionDescription": "The extension gives you access to the most sources. It acts as a local proxy and can handle sites that need special cookies or headers to load.",
-          "proxy": "2. Proxy",
+          "proxy": "Proxy",
           "proxyDescription": "The proxy scrapes media from other websites. It bypasses browser restrictions (like CORS) to allow scraping.",
-          "default": "3. Default Setup",
+          "default": "Default Setup",
           "defaultDescription": "Uses P-Stream's built-in proxy. It's the easiest option but might be slower due to shared bandwidth.",
           "fedapi": {
             "fedapi": "Additional: Febbox token",
@@ -686,7 +693,7 @@
           "subtitle": "Recommended Configurations:",
           "desktop": {
             "title": "Desktop:",
-            "description": "Extension + Febbox token"
+            "description": "Extension (or app) + Febbox token"
           },
           "iOS": {
             "title": "iOS:",
@@ -706,8 +713,14 @@
         "extension": {
           "action": "Install extension",
           "description": "Install browser extension and gain access to additional sources! Remember to enable it for this site.",
-          "quality": "Best quality + More Sources",
+          "quality": "Best quality + More sources",
           "title": "Browser extension"
+        },
+        "desktopapp": {
+          "action": "Install Desktop app",
+          "description": "Install desktop app and gain access to additional sources! Simple and easy to use!",
+          "quality": "Best quality + Even more sources",
+          "title": "P-Stream Desktop app"
         },
         "proxy": {
           "action": "Setup proxy",
@@ -968,6 +981,110 @@
       "remaining": "{{timeLeft}} left • Finish at {{timeFinished, datetime}}",
       "shortRegular": "{{timeWatched}}",
       "shortRemaining": "-{{timeLeft}}"
+    },
+    "segment": {
+      "intro": "Intro",
+      "recap": "Recap",
+      "credits": "Credits"
+    },
+    "skipTime": {
+      "intro": "Skip Intro",
+      "recap": "Skip Recap",
+      "credits": "Skip Credits",
+      "skipSegments": "Skip Segments",
+      "submitSegment": "Submit Segment",
+      "noSegments": "No skip segments available",
+      "startsAt": "Starts at {{time}}",
+      "endsAt": "Ends at {{time}}",
+      "timeUnknown": "Time unknown",
+      "confidence": "confidence",
+      "submissions": "{{count}} submissions",
+      "connectApiKeyMessage": "To submit new segments, enter your TheIntroDB API key in the connections settings",
+      "endOfVideo": "End",
+      "feedback": {
+        "title": "Was this skip correct?",
+        "modal": {
+          "title": "Submit Timestamps to TheIntroDB",
+          "description": "Contribute to TheIntroDB by submitting accurate segment timestamps. All submissions are accepted by the community before being published.",
+          "segmentType": "Segment Type",
+          "types": {
+            "intro": "Intro",
+            "recap": "Recap",
+            "credits": "Credits",
+            "preview": "Preview"
+          },
+          "startTimeLabel": "Start (s)",
+          "endTimeLabel": "End (s)",
+          "placeholders": {
+            "start": {
+              "intro": "2:30 or 150 (leave empty for start at beginning)",
+              "recap": "2:30 or 150 (leave empty for start at beginning)",
+              "credits": "2:30 or 150 (required)",
+              "preview": "2:30 or 150 (required)"
+            },
+            "end": {
+              "intro": "3:30 or 210 (required)",
+              "recap": "3:30 or 210 (required)",
+              "credits": "3:30 or 210 (leave empty for end of media)",
+              "preview": "3:30 or 210 (leave empty for end of media)"
+            }
+          },
+          "whenToTitle": "Timestamps guide:",
+          "whenToDesc": "Enter timestamps in seconds (e.g. 150), mm:ss format (e.g. 2:30), or hh:mm:ss format (e.g. 1:42:20). We'll automatically convert the format for you.",
+          "guide": {
+            "startLabel": "Start:",
+            "startDesc": "Required - when credits begin rolling",
+            "endLabel": "End:",
+            "endDesc": "Optional - empty if extends to end",
+            "durationLabel": "Duration:",
+            "durationDesc": "Min 5s if end provided",
+            "excludeLabel": "Exclude:",
+            "excludeDesc": "Post-credits scenes",
+            "intro": {
+              "whenToTitle": "Intro timestamps guide:",
+              "startDesc": "Optional - leave empty if the intro starts at the beginning of the episode.",
+              "endDesc": "Required - when the intro ends (usually when the title card or main episode begins).",
+              "durationDesc": "Most intros are 30–90 seconds. Minimum 5s if both start and end are set.",
+              "excludeDesc": "Do not include cold opens or pre-intro scenes; only the main title sequence."
+            },
+            "recap": {
+              "whenToTitle": "Recap timestamps guide:",
+              "startDesc": "Optional - leave empty if the recap starts at the beginning of the episode.",
+              "endDesc": "Required - when the recap ends and the new content begins.",
+              "durationDesc": "Recaps vary in length. Minimum 5s if both start and end are set.",
+              "excludeDesc": "Only the \"previously on\" or recap segment; do not include the intro or new scenes."
+            },
+            "credits": {
+              "whenToTitle": "Credits timestamps guide:",
+              "startDesc": "Required - when the closing credits begin (e.g. when the first credit text appears).",
+              "endDesc": "Optional - leave empty if credits run to the end of the file.",
+              "durationDesc": "Minimum 5s if end is provided. Can extend to end of media.",
+              "excludeDesc": "Exclude mid-credits or post-credits scenes; only the main credit roll."
+            },
+            "preview": {
+              "whenToTitle": "Preview timestamps guide:",
+              "startDesc": "Required - when the preview starts (e.g. when the preview text appears).",
+              "endDesc": "Optional - leave empty if the preview ends at the end of the media.",
+              "durationDesc": "Preview varies in length. Minimum 5s.",
+              "excludeDesc": "Preview is usually 15-90 seconds at the end of the episode previewing the next episode."
+            }
+          },
+          "cancel": "Cancel",
+          "submit": "Submit",
+          "submitting": "Submitting...",
+          "error": {
+            "tidbKey": "TIDB API key is not set",
+            "mediaInfo": "Media information is not available",
+            "endTime": "End time is required",
+            "startTime": "Start time is required",
+            "submission": "Error submitting timestamps",
+            "segment": "No segment selected"
+          },
+          "success": {
+            "title": "Submission Successful! Thanks!"
+          }
+        }
+      }
     }
   },
   "support": {
@@ -1168,7 +1285,8 @@
         "items": {
           "default": "Default setup",
           "extension": "Extension",
-          "proxy": "Custom proxy"
+          "proxy": "Custom proxy",
+          "desktopapp": "Native app"
         },
         "redoSetup": "Redo setup",
         "successStatus": {
@@ -1193,6 +1311,10 @@
           "title": "Proxy TMDB",
           "description": "Only needed if you can't access TheMovieDB directly, such as if your ISP blocks it. It is recomended to disable the Discover section to improve performance with this."
         }
+      },
+      "tidb": {
+        "description": "Contribute to TheIntroDB by leaving feedback on intro, recap, and credits segments. <0>Learn more.</0>",
+        "tokenLabel": "API Key"
       }
     },
     "preferences": {
@@ -1303,6 +1425,7 @@
         "moviesOn": "Movies on {{provider}}",
         "tvshowsOn": "Shows on {{provider}}",
         "recommended": "Because You Watched: {{title}}",
+        "forYou": "For You",
         "genreMovies": "{{genre}} Movies",
         "genreShows": "{{genre}} Shows",
         "categoryMovies": "{{category}} Movies",

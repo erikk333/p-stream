@@ -13,6 +13,7 @@ import { Spinner } from "@/components/layout/Spinner";
 import { Transition } from "@/components/utils/Transition";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useBackendUrl } from "@/hooks/auth/useBackendUrl";
+import { useIsDesktopApp } from "@/hooks/useIsDesktopApp";
 import { conf } from "@/setup/config";
 import { useAuthStore } from "@/stores/auth";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -244,6 +245,7 @@ export function LinksDropdown(props: { children: React.ReactNode }) {
   const enableLowPerformanceMode = usePreferencesStore(
     (s) => s.enableLowPerformanceMode,
   );
+  const isDesktopApp = useIsDesktopApp();
 
   return (
     <div className="relative is-dropdown">
@@ -290,6 +292,21 @@ export function LinksDropdown(props: { children: React.ReactNode }) {
           <Divider />
           <DropdownLink href="/settings" icon={Icons.SETTINGS}>
             {t("navigation.menu.settings")}
+          </DropdownLink>
+          {isDesktopApp && (
+            <DropdownLink
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("pstream-desktop-settings"),
+                )
+              }
+              icon={Icons.GEAR}
+            >
+              {t("navigation.menu.desktop")}
+            </DropdownLink>
+          )}
+          <DropdownLink href="/watch-history" icon={Icons.CLOCK}>
+            {t("home.watchHistory.sectionTitle")}
           </DropdownLink>
           {process.env.NODE_ENV === "development" ? (
             <DropdownLink href="/dev" icon={Icons.COMPRESS}>

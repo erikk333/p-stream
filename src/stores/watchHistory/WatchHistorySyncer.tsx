@@ -1,18 +1,21 @@
 import { useEffect } from "react";
 
 import {
-  progressUpdateItemToInput,
-  removeProgress,
-  setProgress,
-} from "@/backend/accounts/progress";
+  removeWatchHistory,
+  setWatchHistory,
+  watchHistoryUpdateItemToInput,
+} from "@/backend/accounts/watchHistory";
 import { useBackendUrl } from "@/hooks/auth/useBackendUrl";
 import { AccountWithToken, useAuthStore } from "@/stores/auth";
-import { ProgressUpdateItem, useProgressStore } from "@/stores/progress";
+import {
+  WatchHistoryUpdateItem,
+  useWatchHistoryStore,
+} from "@/stores/watchHistory";
 
-const syncIntervalMs = 20 * 1000; // 20 second intervals
+const syncIntervalMs = 1 * 60 * 1000; // 1 minute intervals
 
-async function syncProgress(
-  items: ProgressUpdateItem[],
+async function syncWatchHistory(
+  items: WatchHistoryUpdateItem[],
   finish: (id: string) => void,
   url: string,
   account: AccountWithToken | null,
@@ -25,32 +28,36 @@ async function syncProgress(
 
     try {
       if (item.action === "delete") {
-        await removeProgress(
+        await removeWatchHistory(
           url,
           account,
           item.tmdbId,
-          item.seasonId,
           item.episodeId,
+          item.seasonId,
         );
         continue;
       }
 
-      if (item.action === "upsert") {
-        await setProgress(url, account, progressUpdateItemToInput(item));
+      if (item.action === "add" || item.action === "update") {
+        await setWatchHistory(
+          url,
+          account,
+          watchHistoryUpdateItemToInput(item),
+        );
         continue;
       }
     } catch (err) {
       console.error(
-        `Failed to sync progress: ${item.tmdbId} - ${item.action}`,
+        `Failed to sync watch history: ${item.tmdbId} - ${item.action}`,
         err,
       );
     }
   }
 }
 
-export function ProgressSyncer() {
-  const clearUpdateQueue = useProgressStore((s) => s.clearUpdateQueue);
-  const removeUpdateItem = useProgressStore((s) => s.removeUpdateItem);
+export function WatchHistorySyncer() {
+  const clearUpdateQueue = useWatchHistoryStore((s) => s.clearUpdateQueue);
+  const removeUpdateItem = useWatchHistoryStore((s) => s.removeUpdateItem);
   const url = useBackendUrl();
 
   // when booting for the first time, clear update queue.
@@ -59,38 +66,17 @@ export function ProgressSyncer() {
     clearUpdateQueue();
   }, [clearUpdateQueue]);
 
-  // Regular interval sync
-  useEffect(() => {
-    const interval = setInterval(() => {
-      (async () => {
-        if (!url) return;
-        const state = useProgressStore.getState();
-        const user = useAuthStore.getState();
-        await syncProgress(
-          state.updateQueue,
-          removeUpdateItem,
-          url,
-          user.account,
-        );
-      })();
-    }, syncIntervalMs);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [removeUpdateItem, url]);
-
   // Immediate sync when items are added or removed
   useEffect(() => {
     let syncTimeout: NodeJS.Timeout | null = null;
 
     const syncImmediately = async () => {
       if (!url) return;
-      const state = useProgressStore.getState();
+      const state = useWatchHistoryStore.getState();
       const user = useAuthStore.getState();
       // Only sync if there are items in the queue
       if (state.updateQueue.length > 0) {
-        await syncProgress(
+        await syncWatchHistory(
           state.updateQueue,
           removeUpdateItem,
           url,
@@ -106,19 +92,19 @@ export function ProgressSyncer() {
       syncTimeout = setTimeout(syncImmediately, 100);
     };
 
-    // Override the updateItem function to trigger immediate sync
-    const originalUpdateItem = useProgressStore.getState().updateItem;
-    useProgressStore.setState({
-      updateItem: (...args) => {
-        originalUpdateItem(...args);
-        // Trigger debounced sync after updating item
+    // Override the addItem function to trigger immediate sync
+    const originalAddItem = useWatchHistoryStore.getState().addItem;
+    useWatchHistoryStore.setState({
+      addItem: (...args) => {
+        originalAddItem(...args);
+        // Trigger debounced sync after adding item
         debouncedSync();
       },
     });
 
     // Override removeItem to trigger immediate sync
-    const originalRemoveItem = useProgressStore.getState().removeItem;
-    useProgressStore.setState({
+    const originalRemoveItem = useWatchHistoryStore.getState().removeItem;
+    useWatchHistoryStore.setState({
       removeItem: (...args) => {
         originalRemoveItem(...args);
         // Trigger debounced sync after removing item
@@ -130,6 +116,27 @@ export function ProgressSyncer() {
       if (syncTimeout) {
         clearTimeout(syncTimeout);
       }
+    };
+  }, [removeUpdateItem, url]);
+
+  // Regular interval sync
+  useEffect(() => {
+    const interval = setInterval(() => {
+      (async () => {
+        if (!url) return;
+        const state = useWatchHistoryStore.getState();
+        const user = useAuthStore.getState();
+        await syncWatchHistory(
+          state.updateQueue,
+          removeUpdateItem,
+          url,
+          user.account,
+        );
+      })();
+    }, syncIntervalMs);
+
+    return () => {
+      clearInterval(interval);
     };
   }, [removeUpdateItem, url]);
 

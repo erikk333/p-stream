@@ -1,7 +1,7 @@
 {
   "packageManager": "pnpm@9.14.4",
   "name": "P-Stream",
-  "version": "5.3.3",
+  "version": "5.3.5",
   "private": true,
   "homepage": "https://github.com/p-stream/p-stream",
   "scripts": {
@@ -75,7 +75,7 @@
     "semver": "^7.7.3",
     "slugify": "^1.6.6",
     "subsrt-ts": "^2.1.2",
-    "wyzie-lib": "^2.2.6",
+    "wyzie-lib": "^2.4.0",
     "zustand": "^4.5.7"
   },
   "devDependencies": {

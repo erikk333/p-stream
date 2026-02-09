@@ -97,6 +97,7 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
   let lastValidDuration = 0; // Store the last valid duration to prevent reset during source switches
   let lastValidTime = 0; // Store the last valid time to prevent reset during source switches
   let shouldAutoplayAfterLoad = false; // Flag to track if we should autoplay after loading completes
+  let qualityChangeTimeout: NodeJS.Timeout | null = null; // Timeout for debouncing rapid quality changes
 
   const languagePromises = new Map<
     string,
@@ -169,12 +170,9 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
       hls.currentLevel = -1;
       hls.loadLevel = -1;
     }
-    // Only emit quality when we have a valid level index (>= 0)
-    // When automaticQuality is true, currentLevel is -1, so we wait for LEVEL_SWITCHED event
-    if (hls.currentLevel >= 0) {
-      const quality = hlsLevelToQuality(hls.levels[hls.currentLevel]);
-      emit("changedquality", quality);
-    }
+    // For manual quality selection, wait for LEVEL_SWITCHED to emit quality
+    // to avoid showing intermediate states when HLS switches away from unplayable levels
+    // For automatic quality, currentLevel is -1, so we wait for LEVEL_SWITCHED event
   }
 
   function setupSource(vid: HTMLVideoElement, src: LoadableSource) {
@@ -308,29 +306,20 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
         });
         hls.on(Hls.Events.LEVEL_SWITCHED, () => {
           if (!hls) return;
+
+          // Don't process level switched events during debounced quality changes
+          if (qualityChangeTimeout) return;
+
+          const currentLevel = hls.levels[hls.currentLevel];
+          const currentQuality = hlsLevelToQuality(currentLevel);
+
           if (automaticQuality) {
             // Only emit quality changes when automatic quality is enabled
-            const quality = hlsLevelToQuality(hls.levels[hls.currentLevel]);
-            emit("changedquality", quality);
+            emit("changedquality", currentQuality);
           } else {
-            // When automatic quality is disabled, check if current level matches preferred quality
-            const currentQuality = hlsLevelToQuality(
-              hls.levels[hls.currentLevel],
-            );
-            const preferredQualityLevel = getPreferredQuality(
-              hlsLevelsToQualities(hls.levels),
-              {
-                lastChosenQuality: preferenceQuality,
-                automaticQuality: false,
-              },
-            );
-            // Only re-lock if the current level doesn't match our preferred quality
-            if (currentQuality !== preferredQualityLevel) {
-              setupQualityForHls();
-            } else {
-              // Emit the quality change since we're now at the correct level
-              emit("changedquality", currentQuality);
-            }
+            // For manual quality selection, emit the user's preferred quality
+            // This ensures the UI shows the selected quality, not the actual playing quality
+            emit("changedquality", preferenceQuality);
           }
         });
         hls.on(Hls.Events.SUBTITLE_TRACK_LOADED, () => {
@@ -546,6 +535,12 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
   }
 
   function unloadSource() {
+    // Clear any pending quality change timeout
+    if (qualityChangeTimeout) {
+      clearTimeout(qualityChangeTimeout);
+      qualityChangeTimeout = null;
+    }
+
     if (videoElement) {
       videoElement.removeAttribute("src");
       videoElement.load();
@@ -563,6 +558,11 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
     unloadSource();
     if (videoElement) {
       videoElement = null;
+    }
+    // Clear any remaining timeout
+    if (qualityChangeTimeout) {
+      clearTimeout(qualityChangeTimeout);
+      qualityChangeTimeout = null;
     }
   }
 
@@ -643,9 +643,21 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
     },
     changeQuality(newAutomaticQuality, newPreferredQuality) {
       if (source?.type !== "hls") return;
+
+      // Clear any pending quality change to prevent race conditions
+      if (qualityChangeTimeout) {
+        clearTimeout(qualityChangeTimeout);
+        qualityChangeTimeout = null;
+      }
+
       automaticQuality = newAutomaticQuality;
       preferenceQuality = newPreferredQuality;
-      setupQualityForHls();
+
+      // Debounce quality changes to prevent rapid switching issues
+      qualityChangeTimeout = setTimeout(() => {
+        setupQualityForHls();
+        qualityChangeTimeout = null;
+      }, 100); // 100ms debounce delay
     },
 
     processVideoElement(video) {
@@ -784,19 +796,41 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
           proxiedUrl = source.url; // Already proxied or no headers needed
         }
       } else if (source?.type === "mp4") {
-        // TODO: Implement MP4 proxy for protected streams
-        const hasHeaders =
-          source.headers && Object.keys(source.headers).length > 0;
-        if (hasHeaders) {
+        const allHeaders = {
+          ...source.preferredHeaders,
+          ...source.headers,
+        };
+        const hasHeaders = Object.keys(allHeaders).length > 0;
+        if (!isUrlAlreadyProxied(source.url) && hasHeaders) {
           // Use MP4 proxy for streams with headers
-          proxiedUrl = createMP4ProxyUrl(source.url, source.headers || {});
+          proxiedUrl = createMP4ProxyUrl(source.url, allHeaders);
         } else {
           proxiedUrl = source.url;
         }
       }
 
+      // Function to restore original URL
+      const restoreOriginalUrl = () => {
+        if (source?.type === "hls") {
+          if (hls && originalUrl) {
+            hls.loadSource(originalUrl);
+          }
+        } else if (originalUrl) {
+          videoPlayer.src = originalUrl;
+        }
+      };
+
+      // Function to check airplay state and restore if needed
+      const checkAirplayState = () => {
+        const isWireless = videoPlayer.webkitCurrentPlaybackTargetIsWireless;
+        if (!isWireless) {
+          // Airplay didn't start or ended, restore original URL
+          restoreOriginalUrl();
+        }
+      };
+
       if (proxiedUrl && proxiedUrl !== originalUrl) {
-        // Temporarily set the proxied URL for Airplay
+        // Set the proxied URL for Airplay
         if (source?.type === "hls") {
           if (hls) {
             hls.loadSource(proxiedUrl);
@@ -809,16 +843,25 @@ export function makeVideoElementDisplayInterface(): DisplayInterface {
         setTimeout(() => {
           videoPlayer.webkitShowPlaybackTargetPicker();
 
-          // Restore original URL after a short delay
+          // Check airplay state after user interaction
+          // Give user time to select device, then check if airplay started
           setTimeout(() => {
-            if (source?.type === "hls") {
-              if (hls && originalUrl) {
-                hls.loadSource(originalUrl);
-              }
-            } else if (originalUrl) {
-              videoPlayer.src = originalUrl;
+            checkAirplayState();
+          }, 2000);
+
+          // Set up periodic check for airplay state changes
+          const airplayCheckInterval = setInterval(() => {
+            const isWireless =
+              videoPlayer.webkitCurrentPlaybackTargetIsWireless;
+            if (!isWireless) {
+              // Airplay ended, restore original URL
+              restoreOriginalUrl();
+              clearInterval(airplayCheckInterval);
             }
           }, 1000);
+
+          // Clear interval after 5 minutes as safety measure
+          setTimeout(() => clearInterval(airplayCheckInterval), 300000);
         }, 100);
       } else {
         // No proxying needed, just trigger Airplay
