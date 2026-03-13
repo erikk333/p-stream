@@ -6,15 +6,17 @@ Please read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community ap
 
 ## Contents
 
-- [New Contributor Guide](#new-contributor-guide)
-- [Requesting a feature or reporting a bug](#requesting-a-feature-or-reporting-a-bug)
-  - [Discord Server](#discord-server)
-  - [GitHub Issues](#github-issues)
-- [Before you start](#before-you-start)
-- [Contributing](#before-you-start)
-  - [Recommended Development Environment](#recommended-development-environment)
-  - [Tips](#tips)
-  - [Language Contributions](#language-contributions)
+- [Contributing Guidelines for P-Stream](#contributing-guidelines-for-p-stream)
+  - [Contents](#contents)
+  - [New contributor guide](#new-contributor-guide)
+  - [Requesting a feature or reporting a bug](#requesting-a-feature-or-reporting-a-bug)
+    - [Fluxer Server](#fluxer-server)
+    - [GitHub Issues](#github-issues)
+  - [Before you start!](#before-you-start)
+  - [Contributing](#contributing)
+    - [Recommended Development Environment](#recommended-development-environment)
+    - [Tips](#tips)
+    - [Language Contributions](#language-contributions)
 
 ## New contributor guide
 
@@ -29,14 +31,16 @@ To get an overview of the project, read the [README](README.md). Here are some r
 
 There are two places where to request features or report bugs:
 
-- The P-Stream Discord server
+- The P-Stream Fluxer server
 - GitHub Issues
 
-### Discord Server
+### Fluxer Server
 
-If you do not have a GitHub account or want to discuss a feature or bug with us before making an issue, you can join our Discord server.
+If you do not have a GitHub account or want to discuss a feature or bug with us before making an issue, you can join our Fluxer server.
 
-<a href="https://docs.pstream.mov/links/discord"><img src="https://discord.com/api/guilds/1267558147682205738/widget.png?style=banner2" alt="Discord Server"></a>
+Fluxer is an OSS Discord alternative.
+
+<!-- <a href="https://fluxer.gg/rEBQ3B8E"><img src="https://fluxer.com/api/guilds/1267558147682205738/widget.png?style=banner2" alt="Fluxer Server"></a> -->
 
 ### GitHub Issues
 
@@ -95,7 +99,7 @@ Here are some tips to make sure that your pull requests are :pinched_fingers: fi
 
 Language contributions help P-Stream massively, allowing people worldwide to use our app!
 
-We use Weblate for crowdsourcing our translations. [Click here to go to our translation tool.](https://docs.pstream.mov/links/weblate)
+We use Weblate for crowdsourcing our translations.
 
 1. First make sure you make an account. (click the link above)
 2. Click the language you want to help translate, if it's not listed you can click the plus top left to add a new language.

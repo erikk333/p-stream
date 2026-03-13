@@ -33,7 +33,7 @@
     },
     "q5": {
       "title": "How can I find out more?",
-      "body": "P-Stream has a Discord server that can be found at the header of this page!",
+      "body": "P-Stream has a Fluxer server that can be found at the header of this page!",
       "section": "general"
     },
     "q6": {
@@ -103,7 +103,7 @@
     },
     "q20": {
       "title": "What is FED API?",
-      "body": "FED API is our private scraper that pulls streams directly from Febbox. Each free Febbox account includes 100 GB/month of unlimited bandwidth, and we use your UI token to scrape content as if you're watching it yourself. Setup is easiest via desktop browser, but mobile instructions are available on our Discord.",
+      "body": "FED API is our private scraper that pulls streams directly from Febbox. Each free Febbox account includes 100 GB/month of unlimited bandwidth, and we use your UI token to scrape content as if you're watching it yourself. Setup is easiest via desktop browser, but mobile instructions are available on our Fluxer.",
       "section": "connections"
     },
     "q21": {
@@ -232,7 +232,7 @@
       "disclaimerText": "Please note: P-Stream does not host any files itself; instead, it only displays content from third-party providers. Legal issues should be taken up with them."
     },
     "links": {
-      "discord": "Discord",
+      "fluxer": "Fluxer",
       "legal": "Legal / DMCA",
       "github": "GitHub",
       "twitter": "Twitter",
@@ -253,7 +253,8 @@
       "register": "Register",
       "settings": "Settings",
       "migration": "Migrate Account",
-      "jip": "Jip"
+      "jip": "Jip",
+      "pas": "Pas"
     },
     "keyboardShortcuts": {
       "title": "Keyboard Shortcuts",
@@ -308,7 +309,9 @@
       "save": "Save",
       "cancel": "Cancel",
       "saveChanges": "Save Changes",
-      "resetToDefault": "Reset to default"
+      "resetToDefault": "Reset to default",
+      "numberKeySeeking": "Number key progress seeking",
+      "numberKeySeekingDescription": "Use number keys 0-9 to seek to specific positions in the video. 0 goes to the beginning, 1-8 jump to 10%-80%, and 9 goes to 90%."
     }
   },
   "home": {
@@ -456,7 +459,7 @@
       "moreInfo": "More info",
       "explanation": "If you aren't using the extension or don't have FED API set up, it may be harder to find content! We want to fix this, but it's a lot harder to provide content without expensive servers. So please, if you enjoy using P-Stream, please consider donating to help us cover our growing costs.",
       "explanation2": "If you want more info, please join our ",
-      "discord": "Discord",
+      "fluxer": "Fluxer",
       "thankYou": "Thank you for your support!",
       "donate": "Donate",
       "label": "Project Funding: ${{current}} / ${{goal}}",
@@ -686,7 +689,7 @@
             "fedapi": "Additional: Febbox token",
             "fedapiDescription": "Bring your own FREE Febbox account to gain access to FED API, the best sources with 4K quality, Dolby Atmos, skip intro and the fastest load times! Highly recommended option!"
           },
-          "outro": "If you have more questions on how this works, feel free to ask on the <0>P-Stream Discord</0> server!"
+          "outro": "If you have more questions on how this works, feel free to ask on the <0>P-Stream Fluxer</0> server!"
         },
         "recommended": {
           "title": "Not sure what to choose?",
@@ -756,6 +759,8 @@
         "copyHlsPlaylist": "Copy HLS playlist link",
         "downloadSubtitle": "Download current subtitle",
         "downloadVideo": "Download video",
+        "desktopDisclaimer": "Download this video directly to your app for offline playback.",
+        "offlineButton": "Download for Offline Use",
         "openIn": "Open in...",
         "vlc": "VLC",
         "iina": "IINA",
@@ -972,7 +977,7 @@
         "7": "Hold SHIFT and tap the title to copy the link with time!",
         "8": "Set a custom subtitle color!",
         "9": "Migrate your account to a new backend in settings!",
-        "10": "Join the Discord!",
+        "10": "Join the Fluxer!",
         "11": "Hold ` to view keyboard shortcuts!"
       }
     },
@@ -985,12 +990,14 @@
     "segment": {
       "intro": "Intro",
       "recap": "Recap",
-      "credits": "Credits"
+      "credits": "Credits",
+      "preview": "Preview"
     },
     "skipTime": {
       "intro": "Skip Intro",
       "recap": "Skip Recap",
       "credits": "Skip Credits",
+      "preview": "Skip Preview",
       "skipSegments": "Skip Segments",
       "submitSegment": "Submit Segment",
       "noSegments": "No skip segments available",
@@ -1091,7 +1098,7 @@
     "title": "Support",
     "text": "P-Stream is designed to be as user-friendly as possible. However, people still have questions and issues. This page is here to help resolve these shortcomings",
     "q1": {
-      "body": "You can join the official <0>P-Stream discord</0> and ask questions there or you can email the one provided at the bottom of this page.",
+      "body": "You can join the official <0>P-Stream fluxer</0> and ask questions there or you can email the one provided at the bottom of this page.",
       "title": "Where can I get help?"
     },
     "q2": {
@@ -1101,15 +1108,11 @@
   },
   "jip": {
     "title": "Jip",
-    "text": "P-Stream didn't fall out of a coconut tree, it was made mostly by a single person (a very epic one at that).",
-    "q1": {
-      "body": "You can join the official <0>P-Stream discord</0> and ask questions there or you can email the one provided at the bottom of this page.",
-      "title": "Where can I get help?"
-    },
-    "q2": {
-      "body": "We have a <0>GitHub</0> where you can create a detailed issue in our repository. Additionally, if you wish, you can create a pull request to fix the issue yourself.",
-      "title": "How can I report a bug or issue?"
-    }
+    "text": "movie-web didn't fall out of a coconut tree, it was made mostly by a single person (a very epic one at that)."
+  },
+  "pas": {
+    "title": "Pas",
+    "text": "P-Stream was a dream and Pas made it a reality."
   },
   "screens": {
     "legal": {
@@ -1200,6 +1203,7 @@
       "activeTheme": "Active",
       "themes": {
         "blue": "Blue",
+        "custom": "Custom",
         "default": "Default",
         "gray": "Gray",
         "red": "Red",
@@ -1222,6 +1226,11 @@
         "cobalt": "Cobalt",
         "frost": "Frost",
         "christmas": "Christmas"
+      },
+      "customParts": {
+        "primary": "Primary",
+        "secondary": "Secondary",
+        "tertiary": "Tertiary"
       },
       "title": "Appearance",
       "options": {
@@ -1249,7 +1258,10 @@
         "homeSectionOrder": "Home section order",
         "homeSectionOrderDescription": "Drag and drop to reorder the watching and bookmarks sections on your homepage. Group order can be editied from the home page.",
         "forceCompactEpisodeViewLabel": "Compact episodes",
-        "homeSectionOrderGroups": "Reorder bookmark groups"
+        "homeSectionOrderGroups": "Reorder bookmark groups",
+        "pauseOverlay": "Pause overlay",
+        "pauseOverlayDescription": "Show a title/logo and description overlay when the player is paused and idle.",
+        "pauseOverlayLabel": "Pause overlay"
       },
       "sections": {
         "watching": "Currently Watching",
@@ -1315,6 +1327,14 @@
       "tidb": {
         "description": "Contribute to TheIntroDB by leaving feedback on intro, recap, and credits segments. <0>Learn more.</0>",
         "tokenLabel": "API Key"
+      },
+      "trakt": {
+        "title": "Trakt",
+        "description": "Sync your watchlist and history with Trakt.",
+        "details": "Syncing might take a few minutes to complete. Changes on Trakt may conflict with local changes, so local items are prioritized.",
+        "connect": "Connect Trakt",
+        "syncing": "Syncing...",
+        "disconnect": "Disconnect"
       }
     },
     "preferences": {
@@ -1330,6 +1350,9 @@
       "skipCredits": "Skip End Credits",
       "skipCreditsDescription": "When enabled, automatically play the next episode at 99% completion to skip end credits. When disabled, wait until the episode is fully completed.",
       "skipCreditsLabel": "Skip end credits",
+      "autoSkipSegments": "Auto Skip Segments",
+      "autoSkipSegmentsDescription": "When enabled, automatically skip intro, recap, and preview segments while watching.",
+      "autoSkipSegmentsLabel": "Auto skip segments",
       "lowPerformanceMode": "Low performance/bandwidth mode",
       "lowPerformanceModeDescription": "Optimizes the application for slower connections and devices by disabling bandwidth-heavy features. This mode reduces data usage and improves performance while keeping the core search and watch functionality intact. ",
       "lowPerformanceModeLabel": "Low performance mode",
@@ -1345,6 +1368,8 @@
       "sourceOrder": "Reordering sources",
       "sourceOrderDescription": "Drag and drop to reorder sources. This will determine the order in which sources are checked for the media you are trying to watch. If a source is greyed out, it means the <bold>extension</bold> is required for that source. <br><br> <strong>(The default order is best for most users)</strong>",
       "sourceOrderEnableLabel": "Custom source order",
+      "showLess": "Show less",
+      "showMore": "Show more",
       "embedOrder": "Reordering embeds",
       "embedOrderDescription": "Drag and drop to reorder embeds. This will determine the order in which embeds are checked for the media you are trying to watch. <br><br> <strong>(The default order is best for most users)</strong>",
       "embedOrderEnableLabel": "Custom embed order",
@@ -1429,7 +1454,8 @@
         "genreMovies": "{{genre}} Movies",
         "genreShows": "{{genre}} Shows",
         "categoryMovies": "{{category}} Movies",
-        "categoryShows": "{{category}} Shows"
+        "categoryShows": "{{category}} Shows",
+        "top10": "Top 10"
       },
       "change": "Change",
       "more": "View more"
@@ -1480,7 +1506,7 @@
         "warning": "Don't try to use, it's fake.",
         "close": "Got it"
       },
-      "traffic": "{{used}} / {{limit}} High-speed Traffic • Resets in {{reset}}",
+      "traffic": "{{used}} / 100GB High-speed Traffic • Resets in {{reset}}",
       "trafficExplanation": "Febbox gives you 100GB/month of high-speed traffic, the streams might buffer more after you've used up your quota. Depends on your internet speed and the quality of the stream.",
       "useMp4": "Enable MP4 streams. May be faster outside of the U.S., but audio tracks cannot be changed."
     },

@@ -13,6 +13,7 @@ import {
   ExternalIdMovieSearchResult,
   TMDBContentTypes,
   TMDBCredits,
+  TMDBEpisode,
   TMDBEpisodeShort,
   TMDBMediaResult,
   TMDBMovieData,
@@ -55,6 +56,24 @@ export function TMDBMediaToMediaItemType(
   throw new Error("unsupported type");
 }
 
+export function formatTMDBEpisode(v: TMDBEpisodeShort): {
+  id: string;
+  number: number;
+  title: string;
+  air_date: string;
+  still_path: string | null;
+  overview: string;
+} {
+  return {
+    id: v.id.toString(),
+    number: v.episode_number,
+    title: v.title,
+    air_date: v.air_date,
+    still_path: v.still_path,
+    overview: v.overview,
+  };
+}
+
 export function formatTMDBMeta(
   media: TMDBMediaResult,
   season?: TMDBSeasonMetaResult,
@@ -79,6 +98,7 @@ export function formatTMDBMeta(
     year: media.original_release_date?.getFullYear()?.toString(),
     poster: media.poster,
     type,
+    overview: media.overview,
     seasons: seasons as any,
     seasonData: season
       ? {
@@ -87,14 +107,7 @@ export function formatTMDBMeta(
           title: season.title,
           episodes: season.episodes
             .sort((a, b) => a.episode_number - b.episode_number)
-            .map((v) => ({
-              id: v.id.toString(),
-              number: v.episode_number,
-              title: v.title,
-              air_date: v.air_date,
-              still_path: v.still_path,
-              overview: v.overview,
-            })),
+            .map(formatTMDBEpisode),
         }
       : (undefined as any),
   };
@@ -345,10 +358,54 @@ type MediaDetailReturn<T extends TMDBContentTypes> =
       ? TMDBShowData
       : never;
 
+export async function getEpisodeDetails(
+  showId: string,
+  seasonNumber: number,
+  episodeNumber: number,
+): Promise<{ vote_average: number } | null> {
+  try {
+    const data = await get<TMDBEpisode>(
+      `/tv/${showId}/season/${seasonNumber}/episode/${episodeNumber}`,
+    );
+    return {
+      vote_average:
+        typeof data.vote_average === "number" ? data.vote_average : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getSeasonDetails(
+  id: string,
+  season: number,
+): Promise<
+  Array<{
+    id: number;
+    name: string;
+    episode_number: number;
+    overview: string;
+    still_path: string | null;
+    air_date: string;
+    season_number: number;
+  }>
+> {
+  const seasonData = await get<TMDBSeason>(`/tv/${id}/season/${season}`);
+  return seasonData.episodes.map((episode) => ({
+    id: episode.id,
+    name: episode.name,
+    episode_number: episode.episode_number,
+    overview: episode.overview,
+    still_path: episode.still_path,
+    air_date: episode.air_date,
+    season_number: season,
+  }));
+}
+
 export async function getMediaDetails<
   T extends TMDBContentTypes,
   TReturn = MediaDetailReturn<T>,
->(id: string, type: T): Promise<TReturn> {
+>(id: string, type: T, fetchEpisodes: boolean = true): Promise<TReturn> {
   if (type === TMDBContentTypes.MOVIE) {
     return get<TReturn>(`/movie/${id}`, {
       append_to_response: "external_ids,credits,release_dates",
@@ -359,24 +416,47 @@ export async function getMediaDetails<
       append_to_response: "external_ids,credits,content_ratings",
     });
 
+    if (!fetchEpisodes) {
+      return {
+        ...showData,
+        episodes: [],
+      } as TReturn;
+    }
+
     // Fetch episodes for each season
     const showDetails = showData as TMDBShowData;
-    const episodePromises = showDetails.seasons.map(async (season) => {
-      const seasonData = await get<TMDBSeason>(
-        `/tv/${id}/season/${season.season_number}`,
-      );
-      return seasonData.episodes.map((episode) => ({
-        id: episode.id,
-        name: episode.name,
-        episode_number: episode.episode_number,
-        overview: episode.overview,
-        still_path: episode.still_path,
-        air_date: episode.air_date,
-        season_number: season.season_number,
-      }));
-    });
+    const allEpisodesBySeason = new Array(showDetails.seasons.length);
+    const seasonsQueue = showDetails.seasons.map((season, index) => ({
+      season,
+      index,
+    }));
+    const concurrencyLimit = 5;
 
-    const allEpisodes = (await Promise.all(episodePromises)).flat();
+    const workers = Array.from(
+      { length: Math.min(concurrencyLimit, seasonsQueue.length) },
+      async () => {
+        while (seasonsQueue.length > 0) {
+          const item = seasonsQueue.shift();
+          if (!item) break;
+          const { season, index } = item;
+          const seasonData = await get<TMDBSeason>(
+            `/tv/${id}/season/${season.season_number}`,
+          );
+          allEpisodesBySeason[index] = seasonData.episodes.map((episode) => ({
+            id: episode.id,
+            name: episode.name,
+            episode_number: episode.episode_number,
+            overview: episode.overview,
+            still_path: episode.still_path,
+            air_date: episode.air_date,
+            season_number: season.season_number,
+          }));
+        }
+      },
+    );
+
+    await Promise.all(workers);
+    const allEpisodes = allEpisodesBySeason.flat();
 
     return {
       ...showData,
@@ -413,6 +493,26 @@ export function getMediaPoster(posterPath: string | null): string | undefined {
   if (posterPath) return imgUrl;
 }
 
+/**
+ * Fetches the poster URL for a movie or show from TMDB by ID.
+ * Use this when importing from external sources (e.g. Trakt) that may not have poster URLs.
+ */
+export async function getPosterForMedia(
+  tmdbId: string,
+  type: "movie" | "show",
+): Promise<string | undefined> {
+  try {
+    const tmdbType =
+      type === "movie" ? TMDBContentTypes.MOVIE : TMDBContentTypes.TV;
+    const details = await getMediaDetails(tmdbId, tmdbType, false);
+    const posterPath =
+      (details as TMDBMovieData | TMDBShowData).poster_path ?? null;
+    return getMediaPoster(posterPath);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getCollectionDetails(collectionId: number): Promise<any> {
   return get<any>(`/collection/${collectionId}`);
 }
@@ -430,6 +530,32 @@ export async function getEpisodes(
     still_path: e.still_path,
     overview: e.overview,
   }));
+}
+
+/**
+ * Resolve TMDB season and episode IDs for a show. Use when external sources
+ * (e.g. Trakt) only provide season/episode numbers.
+ */
+export async function getEpisodeIds(
+  showTmdbId: string,
+  seasonNumber: number,
+  episodeNumber: number,
+): Promise<{ seasonId: string; episodeId: string } | null> {
+  try {
+    const data = await get<TMDBSeason>(
+      `/tv/${showTmdbId}/season/${seasonNumber}`,
+    );
+    const episode = data.episodes.find(
+      (e) => e.episode_number === episodeNumber,
+    );
+    if (!episode) return null;
+    return {
+      seasonId: data.id.toString(),
+      episodeId: episode.id.toString(),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function getMovieFromExternalId(

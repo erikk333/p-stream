@@ -16,6 +16,7 @@ import { KeyboardCommandsEditModal } from "@/components/overlays/KeyboardCommand
 import { KeyboardCommandsModal } from "@/components/overlays/KeyboardCommandsModal";
 import { NotificationModal } from "@/components/overlays/notificationsModal";
 import { SupportInfoModal } from "@/components/overlays/SupportInfoModal";
+import { TraktAuthHandler } from "@/components/TraktAuthHandler";
 import { useGlobalKeyboardEvents } from "@/hooks/useGlobalKeyboardEvents";
 import { useOnlineListener } from "@/hooks/usePing";
 import { AboutPage } from "@/pages/About";
@@ -38,6 +39,7 @@ import { MigrationUploadPage } from "@/pages/migration/MigrationUpload";
 import { OnboardingPage } from "@/pages/onboarding/Onboarding";
 import { OnboardingExtensionPage } from "@/pages/onboarding/OnboardingExtension";
 import { OnboardingProxyPage } from "@/pages/onboarding/OnboardingProxy";
+import { PasPage } from "@/pages/Pas";
 import { RegisterPage } from "@/pages/Register";
 import { SupportPage } from "@/pages/Support";
 import { WatchHistory } from "@/pages/watchHistory/WatchHistory";
@@ -126,6 +128,7 @@ function App() {
 
   return (
     <Layout>
+      <TraktAuthHandler />
       <LanguageProvider />
       <NotificationModal id="notifications" />
       <KeyboardCommandsModal id="keyboard-commands" />
@@ -188,6 +191,7 @@ function App() {
           {/* Support page */}
           <Route path="/support" element={<SupportPage />} />
           <Route path="/jip" element={<JipPage />} />
+          <Route path="/pas" element={<PasPage />} />
           {/* Discover pages */}
           <Route path="/discover" element={<Discover />} />
           <Route
